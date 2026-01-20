@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Writer's Block</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              serif: ["Merriweather", "serif"],
+            },
+            colors: {
+              paper: "#fcfbf9", // Warm white for light mode
+              ink: "#2d2d2d", // Soft black for text
+              darkbg: "#050505", // Deep black for dark mode
+            },
+            animation: {
+              "fade-in": "fadeIn 0.5s ease-out forwards",
+              "fade-in-up": "fadeInUp 0.8s ease-out forwards",
+              "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0" },
+                "100%": { opacity: "1" },
+              },
+              fadeInUp: {
+                "0%": { opacity: "0", transform: "translateY(20px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+      /* Custom Utilities */
+      body {
+        transition:
+          background-color 0.8s ease,
+          color 0.8s ease;
+      }
+
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Smooth visual transitions for blur/opacity */
+      #editor-textarea {
+        transition:
+          filter 0.1s linear,
+          opacity 0.1s linear;
+      }
+
+      /* Focus outline removal */
+      textarea:focus {
+        outline: none;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-darkbg text-gray-200 min-h-screen flex flex-col overflow-hidden selection:bg-gray-700 selection:text-white dark:selection:bg-white/20"
+  >
+    <!-- Top Bar -->
+    <div class="fixed top-0 left-0 w-full z-50">
+      <!-- Progress Bar Container -->
+      <div
+        id="progress-container"
+        class="h-1 w-full bg-gray-800 dark:bg-gray-800 bg-gray-200 transition-colors duration-500 hidden"
+      >
+        <div
+          id="progress-bar"
+          class="h-full bg-white shadow-[0_0_10px_white] transition-all duration-75 ease-linear w-full"
+        ></div>
+      </div>
+
+      <!-- Header Controls -->
+      <div class="absolute top-6 left-6 z-50">
+        <button
+          id="theme-btn"
+          class="p-2 rounded-full transition-all duration-300 text-gray-500 hover:text-white hover:bg-white/10 dark:text-gray-400 dark:hover:text-white"
+        >
+          <i class="ph ph-sun text-xl" id="theme-icon"></i>
+        </button>
+      </div>
+
+      <div
+        id="stats-controls"
+        class="absolute top-6 right-6 flex items-center gap-4 transition-opacity duration-300 opacity-0 pointer-events-none"
+      >
+        <span
+          id="word-count"
+          class="text-xs tracking-widest uppercase font-mono font-medium text-gray-500"
+          >0 WORDS</span
+        >
+        <button
+          id="save-finish-btn"
+          class="p-2 rounded-full transition-colors text-emerald-600 hover:bg-black/5 dark:text-emerald-400 dark:hover:bg-white/10"
+          title="Save & Finish"
+        >
+          <i class="ph ph-floppy-disk text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main
+      id="main-container"
+      class="flex-1 flex flex-col items-center justify-center relative p-4 md:p-12 w-full transition-all duration-500"
+    >
+      <!-- Welcome Screen -->
+      <div id="welcome-screen" class="text-center max-w-2xl animate-fade-in-up">
+        <div class="mb-6 flex justify-center">
+          <div
+            class="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl bg-white text-black shadow-white/20 dark:bg-white dark:text-black transition-colors duration-500"
+            id="logo-bg"
+          >
+            <i class="ph ph-text-t text-3xl"></i>
+          </div>
+        </div>
+        <h1
+          class="text-5xl md:text-7xl font-serif mb-6 tracking-tight text-inherit transition-colors"
+        >
+          The Writer's Block
+        </h1>
+        <p
+          class="text-xl mb-10 leading-relaxed font-light text-gray-500 dark:text-gray-400 transition-colors"
+        >
+          Don't stop. If you stop typing for
+          <span class="font-semibold text-black dark:text-white">5 seconds</span
+          >, everything you've written will vanish. <br />Enter the flow state.
+        </p>
+        <div class="flex justify-center">
+          <button
+            id="start-btn"
+            class="flex items-center gap-2 px-8 py-4 rounded-full bg-black text-white hover:bg-gray-800 shadow-lg dark:bg-white dark:text-black dark:hover:bg-gray-200 dark:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all transform active:scale-95 font-medium tracking-wide"
+          >
+            <i class="ph ph-play-circle text-xl"></i>
+            Start Writing
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor Screen -->
+      <div
+        id="editor-screen"
+        class="w-full max-w-5xl h-full flex flex-col relative z-10 hidden pt-32 pb-20"
+      >
+        <!-- Danger Counter (Background) -->
+        <div
+          id="danger-overlay"
+          class="fixed inset-0 pointer-events-none flex items-center justify-center z-0 opacity-0 transition-opacity duration-200"
+        >
+          <span
+            id="danger-count"
+            class="text-[12rem] font-bold font-mono text-red-500/10 select-none"
+            >5</span
+          >
+        </div>
+
+        <textarea
+          id="editor-textarea"
+          class="flex-1 w-full bg-transparent border-none text-xl md:text-2xl lg:text-3xl font-serif leading-relaxed placeholder-gray-400/30 dark:placeholder-gray-600 resize-none no-scrollbar z-10 text-left"
+          placeholder="Start typing... do not stop."
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <!-- Success Screen -->
+      <div
+        id="success-screen"
+        class="text-center max-w-2xl w-full hidden animate-fade-in"
+      >
+        <h1 class="text-4xl font-serif mb-2">Session Secure.</h1>
+        <p class="mb-8 text-gray-500 dark:text-gray-400">
+          You wrote <span id="final-word-count">0</span> words without losing
+          focus.
+        </p>
+
+        <div
+          id="final-text-display"
+          class="p-8 rounded-lg mb-8 text-left border max-h-[50vh] overflow-y-auto font-serif shadow-inner text-lg leading-relaxed whitespace-pre-wrap bg-white border-gray-200 text-gray-800 dark:bg-gray-900/50 dark:border-gray-800 dark:text-gray-300 no-scrollbar transition-colors"
+        ></div>
+
+        <div class="flex flex-wrap gap-4 justify-center">
+          <button
+            id="copy-btn"
+            class="flex items-center gap-2 px-6 py-3 rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-white/10 transition-all"
+          >
+            <i class="ph ph-copy text-lg"></i> Copy
+          </button>
+          <button
+            id="download-btn"
+            class="flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 shadow-lg transition-all"
+          >
+            <i class="ph ph-download-simple text-lg"></i> Save Text File
+          </button>
+          <button
+            id="restart-btn"
+            class="flex items-center gap-2 px-6 py-3 rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-white/10 transition-all"
+          >
+            <i class="ph ph-arrow-counter-clockwise text-lg"></i> New Session
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Game Over Modal -->
+    <div
+      id="game-over-modal"
+      class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300"
+    >
+      <div
+        class="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 p-8 rounded-2xl max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300"
+        id="modal-content"
+      >
+        <h2 class="text-2xl font-serif mb-4 dark:text-white text-black">
+          It's Gone.
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+          The ink has faded. The thought is lost.
+        </p>
+
+        <div
+          class="flex items-center gap-3 text-sm p-3 rounded-lg border bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-500 mb-6"
+        >
+          <i class="ph ph-info text-lg"></i>
+          <span>Tip: Don't edit while drafting. Just write.</span>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            id="try-again-btn"
+            class="flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 transition-all font-medium"
+          >
+            <i class="ph ph-arrow-counter-clockwise text-lg"></i> Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer
+      id="footer-msg"
+      class="fixed bottom-4 left-0 w-full text-center pointer-events-none opacity-30 text-xs font-mono transition-colors duration-1000 text-gray-400"
+    >
+      PRESS START TO BEGIN
+    </footer>
+
+    <script>
+      // --- Constants & State ---
+      const TIME_LIMIT = 5000;
+      const WARNING_THRESHOLD = 3000;
+      const FADE_START_DELAY = 1000;
+
+      let state = {
+        mode: "welcome", // welcome, writing, gameover, success
+        text: "",
+        timeLeft: TIME_LIMIT,
+        lastTypeTime: 0,
+        intervalId: null,
+        wordCount: 0,
+        isDark: true,
+      };
+
+      // --- DOM Elements ---
+      const body = document.body;
+      const mainContainer = document.getElementById("main-container");
+
+      // Screens
+      const welcomeScreen = document.getElementById("welcome-screen");
+      const editorScreen = document.getElementById("editor-screen");
+      const successScreen = document.getElementById("success-screen");
+      const gameOverModal = document.getElementById("game-over-modal");
+      const modalContent = document.getElementById("modal-content");
+
+      // Controls & Feedback
+      const progressBarContainer =
+        document.getElementById("progress-container");
+      const progressBar = document.getElementById("progress-bar");
+      const statsControls = document.getElementById("stats-controls");
+      const wordCountDisplay = document.getElementById("word-count");
+      const textarea = document.getElementById("editor-textarea");
+      const footerMsg = document.getElementById("footer-msg");
+      const dangerOverlay = document.getElementById("danger-overlay");
+      const dangerCount = document.getElementById("danger-count");
+
+      // Buttons
+      const startBtn = document.getElementById("start-btn");
+      const themeBtn = document.getElementById("theme-btn");
+      const themeIcon = document.getElementById("theme-icon");
+      const saveFinishBtn = document.getElementById("save-finish-btn");
+      const tryAgainBtn = document.getElementById("try-again-btn");
+      const restartBtn = document.getElementById("restart-btn");
+      const copyBtn = document.getElementById("copy-btn");
+      const downloadBtn = document.getElementById("download-btn");
+
+      // --- Logic ---
+
+      function init() {
+        // Theme setup
+        if (localStorage.getItem("theme") === "light") {
+          setTheme(false);
+        } else {
+          setTheme(true);
+        }
+
+        // Event Listeners
+        themeBtn.addEventListener("click", toggleTheme);
+        startBtn.addEventListener("click", startGame);
+        tryAgainBtn.addEventListener("click", () => {
+          hideModal();
+          startGame();
+        });
+        restartBtn.addEventListener("click", () => {
+          resetUI();
+          state.mode = "welcome";
+          updateScreenVisibility();
+        });
+        saveFinishBtn.addEventListener("click", finishSession);
+
+        textarea.addEventListener("input", handleInput);
+
+        // Output actions
+        copyBtn.addEventListener("click", copyText);
+        downloadBtn.addEventListener("click", downloadText);
+      }
+
+      // --- Game Loop ---
+
+      function startGame() {
+        state.mode = "writing";
+        state.text = "";
+        state.wordCount = 0;
+        state.timeLeft = TIME_LIMIT;
+        state.lastTypeTime = Date.now();
+
+        textarea.value = "";
+        wordCountDisplay.innerText = "0 WORDS";
+        footerMsg.innerText = "KEEP TYPING";
+
+        updateScreenVisibility();
+
+        // Delay focus for animation
+        setTimeout(() => textarea.focus(), 100);
+
+        // Start Loop
+        if (state.intervalId) clearInterval(state.intervalId);
+        state.intervalId = setInterval(gameLoop, 50);
+      }
+
+      function gameLoop() {
+        if (state.mode !== "writing") return;
+
+        const now = Date.now();
+        const elapsed = now - state.lastTypeTime;
+        state.timeLeft = Math.max(0, TIME_LIMIT - elapsed);
+
+        updateVisuals();
+
+        if (state.timeLeft === 0) {
+          triggerGameOver();
+        }
+      }
+
+      function handleInput(e) {
+        state.text = e.target.value;
+        state.lastTypeTime = Date.now();
+        state.timeLeft = TIME_LIMIT; // Reset immediately for snappy feel
+
+        // Word count
+        const words = state.text
+          .trim()
+          .split(/\s+/)
+          .filter((w) => w.length > 0).length;
+        state.wordCount = words;
+        wordCountDisplay.innerText = `${words} WORDS`;
+
+        updateVisuals(); // Force update immediately
+      }
+
+      function updateVisuals() {
+        // Progress Bar
+        const percentage = (state.timeLeft / TIME_LIMIT) * 100;
+        progressBar.style.width = `${percentage}%`;
+
+        // Color Dynamics based on urgency
+        if (state.timeLeft < 2000) {
+          progressBar.classList.remove(
+            "bg-white",
+            "shadow-[0_0_10px_white]",
+            "bg-black",
+          );
+          progressBar.classList.add("bg-red-500", "shadow-[0_0_10px_red]");
+
+          // Background tint
+          if (state.isDark) {
+            body.classList.add("bg-red-950/30");
+            body.classList.remove("bg-darkbg");
+          } else {
+            body.classList.add("bg-red-50");
+            body.classList.remove("bg-paper");
+          }
+
+          // Big Counter
+          dangerOverlay.classList.remove("opacity-0");
+          dangerCount.innerText = Math.ceil(state.timeLeft / 1000);
+        } else {
+          // Normal State
+          progressBar.classList.remove("bg-red-500", "shadow-[0_0_10px_red]");
+
+          if (state.isDark) {
+            progressBar.classList.add("bg-white", "shadow-[0_0_10px_white]");
+            body.classList.remove("bg-red-950/30");
+            body.classList.add("bg-darkbg");
+          } else {
+            progressBar.classList.add("bg-black");
+            body.classList.remove("bg-red-50");
+            body.classList.add("bg-paper");
+          }
+
+          dangerOverlay.classList.add("opacity-0");
+        }
+
+        // Blur & Opacity calculation
+        let blurAmount = 0;
+        let opacity = 1;
+
+        if (state.timeLeft < WARNING_THRESHOLD) {
+          // Calculate fade
+          // Opacity starts dropping after 1s of inactivity relative to total time
+          // But the prompt implies fading out slowly.
+          // Let's make it fade linearly from 3s to 0s
+          opacity = Math.max(
+            0,
+            state.timeLeft / (TIME_LIMIT - FADE_START_DELAY),
+          );
+          if (opacity > 1) opacity = 1;
+
+          // Calculate blur (increases as time decreases)
+          blurAmount = (WARNING_THRESHOLD - state.timeLeft) / 150;
+        }
+
+        textarea.style.opacity = opacity;
+        textarea.style.filter = `blur(${blurAmount}px)`;
+      }
+
+      function triggerGameOver() {
+        state.mode = "gameover";
+        clearInterval(state.intervalId);
+
+        // Clear text
+        textarea.value = "";
+        state.text = "";
+
+        showModal();
+        footerMsg.innerText = "PRESS TRY AGAIN";
+      }
+
+      function finishSession() {
+        state.mode = "success";
+        clearInterval(state.intervalId);
+
+        document.getElementById("final-word-count").innerText = state.wordCount;
+        document.getElementById("final-text-display").innerText = state.text;
+
+        updateScreenVisibility();
+        footerMsg.innerText = "SESSION SAVED";
+
+        // Reset BG
+        if (state.isDark) {
+          body.classList.remove("bg-red-950/30");
+          body.classList.add("bg-darkbg");
+        } else {
+          body.classList.remove("bg-red-50");
+          body.classList.add("bg-paper");
+        }
+      }
+
+      // --- View Helpers ---
+
+      function updateScreenVisibility() {
+        // Hide all first
+        welcomeScreen.classList.add("hidden");
+        editorScreen.classList.add("hidden");
+        successScreen.classList.add("hidden");
+        progressBarContainer.classList.add("hidden");
+
+        statsControls.classList.remove("opacity-100", "pointer-events-auto");
+        statsControls.classList.add("opacity-0", "pointer-events-none");
+
+        mainContainer.classList.remove("justify-start");
+        mainContainer.classList.add("justify-center");
+
+        if (state.mode === "welcome") {
+          welcomeScreen.classList.remove("hidden");
+        } else if (state.mode === "writing") {
+          editorScreen.classList.remove("hidden");
+          progressBarContainer.classList.remove("hidden");
+
+          statsControls.classList.remove("opacity-0", "pointer-events-none");
+          statsControls.classList.add("opacity-100", "pointer-events-auto");
+
+          // Align top for writing
+          mainContainer.classList.remove("justify-center");
+          mainContainer.classList.add("justify-start");
+        } else if (state.mode === "success") {
+          successScreen.classList.remove("hidden");
+        }
+      }
+
+      function showModal() {
+        gameOverModal.classList.remove("hidden");
+        // Small delay to allow display:block to apply before opacity transition
+        setTimeout(() => {
+          gameOverModal.classList.remove("opacity-0");
+          modalContent.classList.remove("scale-95");
+          modalContent.classList.add("scale-100");
+        }, 10);
+      }
+
+      function hideModal() {
+        gameOverModal.classList.add("opacity-0");
+        modalContent.classList.remove("scale-100");
+        modalContent.classList.add("scale-95");
+        setTimeout(() => {
+          gameOverModal.classList.add("hidden");
+        }, 300);
+      }
+
+      function resetUI() {
+        state.text = "";
+        textarea.value = "";
+        textarea.style.opacity = 1;
+        textarea.style.filter = "blur(0px)";
+        progressBar.style.width = "100%";
+      }
+
+      // --- Theme Logic ---
+
+      function toggleTheme() {
+        setTheme(!state.isDark);
+      }
+
+      function setTheme(isDark) {
+        state.isDark = isDark;
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+
+        if (isDark) {
+          document.documentElement.classList.add("dark");
+          body.classList.remove("bg-paper", "text-ink");
+          body.classList.add("bg-darkbg", "text-gray-200");
+          themeIcon.classList.remove("ph-moon");
+          themeIcon.classList.add("ph-sun");
+
+          // Button styles update
+          updateButtonStyles(true);
+        } else {
+          document.documentElement.classList.remove("dark");
+          body.classList.remove("bg-darkbg", "text-gray-200");
+          body.classList.add("bg-paper", "text-ink");
+          themeIcon.classList.remove("ph-sun");
+          themeIcon.classList.add("ph-moon");
+
+          updateButtonStyles(false);
+        }
+      }
+
+      function updateButtonStyles(isDark) {
+        // Helper to ensure dynamic elements match theme instantly without waiting for class propagation
+        const logoBg = document.getElementById("logo-bg");
+        if (logoBg) {
+          if (isDark) {
+            logoBg.classList.replace("bg-black", "bg-white");
+            logoBg.classList.replace("text-white", "text-black");
+            logoBg.classList.replace("shadow-black/20", "shadow-white/20");
+          } else {
+            logoBg.classList.replace("bg-white", "bg-black");
+            logoBg.classList.replace("text-black", "text-white");
+            logoBg.classList.replace("shadow-white/20", "shadow-black/20");
+          }
+        }
+      }
+
+      // --- Export Functions ---
+
+      function copyText() {
+        const textAreaTemp = document.createElement("textarea");
+        textAreaTemp.value = state.text;
+        document.body.appendChild(textAreaTemp);
+        textAreaTemp.select();
+        document.execCommand("copy");
+        document.body.removeChild(textAreaTemp);
+
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<i class="ph ph-check text-lg"></i> Copied`;
+        setTimeout(() => (copyBtn.innerHTML = originalText), 2000);
+      }
+
+      function downloadText() {
+        const element = document.createElement("a");
+        const file = new Blob([state.text], { type: "text/plain" });
+        element.href = URL.createObjectURL(file);
+        element.download = `flow_session_${new Date().toISOString().slice(0, 10)}.txt`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
+
+      // Initialize
+      init();
+    </script>
+  </body>
+</html>
