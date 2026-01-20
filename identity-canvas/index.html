@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser Fingerprint Art - Identity Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Space+Grotesk:wght@300;400;600;700&display=swap");
+
+      body {
+        font-family: "Space Grotesk", sans-serif;
+        background-color: #050505;
+        color: #e5e5e5;
+        overflow-x: hidden;
+      }
+
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 3px;
+      }
+
+      /* Animations */
+      @keyframes scanline {
+        0% {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh);
+          opacity: 0;
+        }
+      }
+
+      .scan-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          rgba(0, 255, 100, 0.1),
+          transparent
+        );
+        pointer-events: none;
+        z-index: 50;
+        animation: scanline 3s ease-in-out forwards;
+        display: none;
+      }
+
+      .glass-panel {
+        background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .btn-hover {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      .btn-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 255, 150, 0.15);
+      }
+
+      .feature-grid {
+        background-image: radial-gradient(
+          rgba(255, 255, 255, 0.1) 1px,
+          transparent 1px
+        );
+        background-size: 20px 20px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col relative">
+    <!-- Scanning Animation Overlay -->
+    <div id="scanLine" class="scan-overlay"></div>
+
+    <!-- Background Decoration -->
+    <div
+      class="fixed inset-0 feature-grid opacity-[0.03] z-0 pointer-events-none"
+    ></div>
+
+    <!-- Header -->
+    <header
+      class="fixed top-0 w-full z-40 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <i data-lucide="fingerprint" class="text-emerald-400 w-6 h-6"></i>
+          <span class="font-bold tracking-tight text-lg">IDENTITY CANVAS</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm mono text-neutral-400">
+          <span
+            class="hidden md:inline-block status-dot w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
+          ></span>
+          <span class="hidden md:inline-block">SYSTEM: ONLINE</span>
+          <a
+            href="#"
+            onclick="
+              alert(
+                'Privacy Commitment: All calculations are performed locally on your device. Your fingerprint data never leaves this browser.',
+              )
+            "
+            class="hover:text-white transition-colors"
+            >PRIVACY</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main
+      class="flex-grow flex flex-col lg:flex-row pt-20 pb-10 max-w-7xl mx-auto w-full px-4 gap-6 z-10"
+    >
+      <!-- Left: Controls & Stats -->
+      <aside class="w-full lg:w-80 flex flex-col gap-6 order-2 lg:order-1">
+        <!-- Fingerprint DNA Card -->
+        <div class="glass-panel rounded-xl p-5 flex flex-col gap-4">
+          <div
+            class="flex justify-between items-center border-b border-white/10 pb-3"
+          >
+            <h2
+              class="text-sm font-bold text-neutral-300 flex items-center gap-2"
+            >
+              <i data-lucide="dna" class="w-4 h-4 text-emerald-400"></i> DIGITAL
+              DNA
+            </h2>
+            <span
+              id="fingerprintHash"
+              class="mono text-[10px] text-neutral-500 bg-black/40 px-2 py-1 rounded"
+              >CALCULATING...</span
+            >
+          </div>
+
+          <div class="space-y-3 text-xs mono text-neutral-400" id="signalList">
+            <!-- Signals injected here -->
+            <div class="animate-pulse">Scanning browser environment...</div>
+          </div>
+
+          <div class="pt-2">
+            <button
+              id="btnToggleDetails"
+              class="w-full py-2 text-xs border border-white/10 rounded hover:bg-white/5 transition-colors text-center text-neutral-300"
+            >
+              View Signal Sources
+            </button>
+          </div>
+        </div>
+
+        <!-- Style Selector -->
+        <div class="glass-panel rounded-xl p-5">
+          <h3
+            class="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4"
+          >
+            Art Style
+          </h3>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              class="style-btn active bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 py-2 rounded-lg text-xs font-bold transition-all"
+              data-style="neural"
+            >
+              NEURAL
+            </button>
+            <button
+              class="style-btn bg-white/5 border border-white/5 hover:bg-white/10 text-neutral-400 py-2 rounded-lg text-xs font-bold transition-all"
+              data-style="geo"
+            >
+              BAUHAUS
+            </button>
+            <button
+              class="style-btn bg-white/5 border border-white/5 hover:bg-white/10 text-neutral-400 py-2 rounded-lg text-xs font-bold transition-all"
+              data-style="glitch"
+            >
+              GLITCH
+            </button>
+          </div>
+        </div>
+
+        <!-- Intro Text -->
+        <div class="p-4 text-neutral-500 text-sm leading-relaxed">
+          <p>This is how the internet sees you.</p>
+          <p class="mt-2 text-xs">
+            We transform 15+ "fingerprint" signals (UA, Timezone, Screen, etc.)
+            into a mathematical seed to generate this unique artwork.
+          </p>
+        </div>
+      </aside>
+
+      <!-- Center: The Canvas -->
+      <section
+        class="flex-grow flex flex-col items-center justify-center relative order-1 lg:order-2 min-h-[50vh]"
+      >
+        <div class="relative group w-full max-w-[600px] aspect-square">
+          <!-- Art Container -->
+          <div
+            class="absolute inset-0 bg-neutral-900 rounded-sm shadow-2xl overflow-hidden border border-white/5 ring-1 ring-white/5"
+          >
+            <canvas
+              id="artCanvas"
+              class="w-full h-full object-contain"
+            ></canvas>
+          </div>
+
+          <!-- Hover Overlay Actions -->
+          <div
+            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 backdrop-blur-sm rounded-sm"
+          >
+            <button
+              id="btnDownload"
+              class="btn-hover flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full font-bold text-sm"
+            >
+              <i data-lucide="download" class="w-4 h-4"></i> Export HD PNG
+            </button>
+            <button
+              id="btnRegenerate"
+              class="btn-hover flex items-center gap-2 bg-neutral-800 text-white border border-neutral-600 px-4 py-3 rounded-full font-bold text-sm"
+            >
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i> Re-scan
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 flex gap-4 text-xs text-neutral-500 mono">
+          <div class="flex items-center gap-1">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+            <span id="canvasRes">1024x1024px</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span id="seedId">SEED: NULL</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Details Modal -->
+    <div
+      id="detailsModal"
+      class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="glass-panel w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl p-8 relative shadow-2xl border border-emerald-500/20"
+      >
+        <button
+          id="btnCloseModal"
+          class="absolute top-4 right-4 text-neutral-400 hover:text-white"
+        >
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+
+        <h2 class="text-2xl font-bold mb-2">Signal Decoding</h2>
+        <p class="text-neutral-400 text-sm mb-6">
+          On the left is your browser fingerprint data; on the right is how that
+          data influences the artwork.
+        </p>
+
+        <div class="space-y-4" id="explainableGrid">
+          <!-- Content injected via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+      // Initialize Icons
+      lucide.createIcons();
+
+      /* --- CORE LOGIC: FINGERPRINTING & SEEDING --- */
+
+      class FingerprintEngine {
+        constructor() {
+          this.data = {};
+          this.hash = 0;
+        }
+
+        async collect() {
+          // Gathering harmless signals
+          const gl = document.createElement("canvas").getContext("webgl");
+          const debugInfo = gl
+            ? gl.getExtension("WEBGL_debug_renderer_info")
+            : null;
+          const renderer = debugInfo
+            ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+            : "Unknown";
+
+          this.data = {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            languages: (navigator.languages || []).join(","),
+            screenRes: `${window.screen.width}x${window.screen.height}`,
+            colorDepth: window.screen.colorDepth,
+            pixelRatio: window.devicePixelRatio,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            cores: navigator.hardwareConcurrency || 2,
+            memory: navigator.deviceMemory || 4,
+            platform: navigator.platform,
+            renderer: renderer,
+            cookiesEnabled: navigator.cookieEnabled,
+          };
+
+          // Create a deterministic string
+          const fingerprintString = Object.values(this.data).join("|");
+          this.hash = this.cyrb128(fingerprintString);
+
+          return this.hash; // Return seed array
+        }
+
+        // Simple hashing function (MurmurHash3-like) for seed generation
+        cyrb128(str) {
+          let h1 = 1779033703,
+            h2 = 3144134277,
+            h3 = 1013904242,
+            h4 = 2773480762;
+          for (let i = 0, k; i < str.length; i++) {
+            k = str.charCodeAt(i);
+            h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+            h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+            h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+            h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+          }
+          h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+          h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+          h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+          h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+          return [
+            (h1 ^ h2 ^ h3 ^ h4) >>> 0,
+            (h2 ^ h1) >>> 0,
+            (h3 ^ h1) >>> 0,
+            (h4 ^ h1) >>> 0,
+          ];
+        }
+      }
+
+      /* --- PRNG (Pseudo Random Number Generator) --- */
+
+      class Random {
+        constructor(seed) {
+          this.a = seed[0];
+          this.b = seed[1];
+          this.c = seed[2];
+          this.d = seed[3];
+        }
+
+        // sfc32 algorithm
+        next() {
+          this.a >>>= 0;
+          this.b >>>= 0;
+          this.c >>>= 0;
+          this.d >>>= 0;
+          let t = (this.a + this.b) | 0;
+          this.a = this.b ^ (this.b >>> 9);
+          this.b = (this.c + (this.c << 3)) | 0;
+          this.c = (this.c << 21) | (this.c >>> 11);
+          this.d = (this.d + 1) | 0;
+          t = (t + this.d) | 0;
+          this.c = (this.c + t) | 0;
+          return (t >>> 0) / 4294967296;
+        }
+
+        // Helpers
+        range(min, max) {
+          return min + this.next() * (max - min);
+        }
+        int(min, max) {
+          return Math.floor(this.range(min, max + 1));
+        }
+        bool() {
+          return this.next() > 0.5;
+        }
+        pick(arr) {
+          return arr[this.int(0, arr.length - 1)];
+        }
+      }
+
+      /* --- ART RENDERER --- */
+
+      class ArtRenderer {
+        constructor(canvas, seed, data) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+          this.rng = new Random(seed);
+          this.data = data;
+
+          // Set high resolution
+          this.width = 2048;
+          this.height = 2048;
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+        }
+
+        // Helper: Generate a consistent palette based on seed
+        generatePalette() {
+          const baseHue = this.rng.int(0, 360);
+          const secondaryHue = (baseHue + this.rng.int(30, 180)) % 360;
+          const sat = this.rng.int(40, 90);
+          const lit = this.rng.int(40, 70);
+
+          return {
+            bg: "#050505",
+            primary: `hsl(${baseHue}, ${sat}%, ${lit}%)`,
+            secondary: `hsl(${secondaryHue}, ${sat}%, ${lit}%)`,
+            accent: `hsl(${(baseHue + 180) % 360}, 90%, 60%)`,
+            dim: `hsla(${baseHue}, 30%, 30%, 0.1)`,
+          };
+        }
+
+        clear() {
+          this.ctx.fillStyle = "#050505";
+          this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+
+        // STYLE 1: NEURAL NETWORK (Connecting Nodes)
+        drawNeural() {
+          this.clear();
+          const colors = this.generatePalette();
+          const nodeCount = this.rng.int(60, 150);
+          const nodes = [];
+
+          // Create Nodes
+          for (let i = 0; i < nodeCount; i++) {
+            nodes.push({
+              x: this.rng.range(0, this.width),
+              y: this.rng.range(0, this.height),
+              r: this.rng.range(2, 8),
+            });
+          }
+
+          // Draw Connections
+          this.ctx.lineWidth = 2;
+          for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+              const dx = nodes[i].x - nodes[j].x;
+              const dy = nodes[i].y - nodes[j].y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+
+              if (dist < 300) {
+                const opacity = 1 - dist / 300;
+                this.ctx.strokeStyle =
+                  opacity > 0.5 ? colors.primary : colors.dim;
+                this.ctx.globalAlpha = opacity * 0.5;
+                this.ctx.beginPath();
+                this.ctx.moveTo(nodes[i].x, nodes[i].y);
+                this.ctx.lineTo(nodes[j].x, nodes[j].y);
+                this.ctx.stroke();
+              }
+            }
+          }
+
+          // Draw Nodes
+          this.ctx.globalAlpha = 1;
+          nodes.forEach((node) => {
+            this.ctx.fillStyle = this.rng.bool()
+              ? colors.secondary
+              : colors.accent;
+            this.ctx.beginPath();
+            this.ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Glow
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowColor = colors.primary;
+            this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
+          });
+        }
+
+        // STYLE 2: GEOMETRIC BAUHAUS (Shapes & Blending)
+        drawGeometric() {
+          this.clear();
+          const colors = this.generatePalette();
+
+          // Background texture
+          this.ctx.fillStyle = colors.dim;
+          for (let i = 0; i < 50; i++) {
+            const w = this.rng.range(50, 500);
+            this.ctx.fillRect(
+              this.rng.range(0, this.width),
+              this.rng.range(0, this.height),
+              w,
+              2,
+            );
+          }
+
+          this.ctx.globalCompositeOperation = "screen"; // Additive blending
+
+          const shapeCount = this.rng.int(10, 25);
+          for (let i = 0; i < shapeCount; i++) {
+            this.ctx.fillStyle = this.rng.pick([
+              colors.primary,
+              colors.secondary,
+              colors.accent,
+            ]);
+            this.ctx.globalAlpha = this.rng.range(0.3, 0.8);
+
+            const type = this.rng.int(0, 2);
+            const x = this.rng.range(0, this.width);
+            const y = this.rng.range(0, this.height);
+            const s = this.rng.range(200, 600);
+
+            this.ctx.beginPath();
+            if (type === 0) {
+              // Circle
+              this.ctx.arc(x, y, s / 2, 0, Math.PI * 2);
+            } else if (type === 1) {
+              // Rect
+              this.ctx.rect(x - s / 2, y - s / 2, s, s);
+            } else {
+              // Triangle
+              this.ctx.moveTo(x, y - s / 2);
+              this.ctx.lineTo(x + s / 2, y + s / 2);
+              this.ctx.lineTo(x - s / 2, y + s / 2);
+            }
+            this.ctx.fill();
+          }
+
+          this.ctx.globalCompositeOperation = "source-over";
+
+          // Add "Grain"
+          const id = this.ctx.getImageData(0, 0, this.width, this.height);
+          const d = id.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const noise = (Math.random() - 0.5) * 20;
+            d[i] += noise;
+            d[i + 1] += noise;
+            d[i + 2] += noise;
+          }
+          this.ctx.putImageData(id, 0, 0);
+        }
+
+        // STYLE 3: GLITCH (Data Sorting)
+        drawGlitch() {
+          this.clear();
+          const colors = this.generatePalette();
+
+          // Base Gradient
+          const grad = this.ctx.createLinearGradient(
+            0,
+            0,
+            this.width,
+            this.height,
+          );
+          grad.addColorStop(0, "#000");
+          grad.addColorStop(1, "#111");
+          this.ctx.fillStyle = grad;
+          this.ctx.fillRect(0, 0, this.width, this.height);
+
+          // Draw heavy blocks
+          for (let i = 0; i < 20; i++) {
+            this.ctx.fillStyle = this.rng.pick([
+              colors.primary,
+              "#222",
+              colors.secondary,
+            ]);
+            const h = this.rng.range(10, 200);
+            const y = this.rng.range(0, this.height);
+            this.ctx.fillRect(0, y, this.width, h);
+          }
+
+          // Glitch slices
+          const slices = this.rng.int(50, 200);
+          for (let i = 0; i < slices; i++) {
+            const x = this.rng.range(0, this.width);
+            const y = this.rng.range(0, this.height);
+            const w = this.rng.range(50, 400);
+            const h = this.rng.range(2, 10);
+
+            this.ctx.fillStyle = this.rng.bool() ? colors.accent : "#fff";
+            if (this.rng.next() > 0.9) this.ctx.fillStyle = "#f0f"; // Occasional pink
+
+            this.ctx.fillRect(x, y, w, h);
+
+            // Displacement
+            if (this.rng.bool()) {
+              try {
+                const shift = this.rng.range(-50, 50);
+                this.ctx.drawImage(
+                  this.canvas,
+                  0,
+                  y,
+                  this.width,
+                  h,
+                  shift,
+                  y,
+                  this.width,
+                  h,
+                );
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      /* --- APP CONTROLLER --- */
+
+      const app = {
+        fingerprint: new FingerprintEngine(),
+        renderer: null,
+        currentStyle: "neural",
+
+        async init() {
+          // UI Elements
+          const canvas = document.getElementById("artCanvas");
+          const signalList = document.getElementById("signalList");
+          const btnDownload = document.getElementById("btnDownload");
+          const btnRegenerate = document.getElementById("btnRegenerate");
+          const styleBtns = document.querySelectorAll(".style-btn");
+
+          // 1. Scanning Effect
+          document.getElementById("scanLine").style.display = "block";
+          setTimeout(() => {
+            document.getElementById("scanLine").style.display = "none";
+          }, 2000);
+
+          // 2. Get Data
+          const seed = await this.fingerprint.collect();
+          const data = this.fingerprint.data;
+
+          // 3. Update UI Stats
+          document.getElementById("seedId").textContent =
+            `SEED: ${seed[0].toString(16).toUpperCase()}`;
+          document.getElementById("fingerprintHash").textContent =
+            `${seed[0].toString(16).substr(0, 8)}...`;
+
+          signalList.innerHTML = `
+                    <div class="flex justify-between"><span class="text-neutral-600">OS</span> <span>${data.platform}</span></div>
+                    <div class="flex justify-between"><span class="text-neutral-600">CORES</span> <span>${data.cores}</span></div>
+                    <div class="flex justify-between"><span class="text-neutral-600">LANG</span> <span>${data.language}</span></div>
+                    <div class="flex justify-between"><span class="text-neutral-600">RES</span> <span>${data.screenRes}</span></div>
+                    <div class="flex justify-between"><span class="text-neutral-600">TZ</span> <span>${data.timezone}</span></div>
+                    <div class="mt-2 text-neutral-600 text-[10px] uppercase">Renderer: ${data.renderer.substr(0, 20)}...</div>
+                `;
+
+          this.setupExplainableGrid(data, seed);
+
+          // 4. Initialize Renderer
+          this.renderer = new ArtRenderer(canvas, seed, data);
+          this.render();
+
+          // 5. Event Listeners
+          styleBtns.forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              // UI update
+              styleBtns.forEach((b) => {
+                b.classList.remove(
+                  "bg-emerald-500/20",
+                  "border-emerald-500/50",
+                  "text-emerald-300",
+                );
+                b.classList.add("bg-white/5", "text-neutral-400");
+              });
+              e.target.classList.remove("bg-white/5", "text-neutral-400");
+              e.target.classList.add(
+                "bg-emerald-500/20",
+                "border-emerald-500/50",
+                "text-emerald-300",
+              );
+
+              // Render
+              this.currentStyle = e.target.dataset.style;
+              this.render();
+            });
+          });
+
+          btnRegenerate.addEventListener("click", () => {
+            document.getElementById("scanLine").style.display = "block";
+            setTimeout(
+              () =>
+                (document.getElementById("scanLine").style.display = "none"),
+              1000,
+            );
+            this.render();
+          });
+
+          btnDownload.addEventListener("click", () => {
+            const link = document.createElement("a");
+            link.download = `Identity_${seed[0]}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+          });
+        },
+
+        render() {
+          if (this.currentStyle === "neural") this.renderer.drawNeural();
+          if (this.currentStyle === "geo") this.renderer.drawGeometric();
+          if (this.currentStyle === "glitch") this.renderer.drawGlitch();
+        },
+
+        setupExplainableGrid(data, seed) {
+          const grid = document.getElementById("explainableGrid");
+          // Fake mapping logic for demonstration (in reality, the seed drives everything)
+          const items = [
+            {
+              label: "Base Color Hue",
+              source: "Timezone & Language",
+              value: `${data.timezone} + ${data.language}`,
+            },
+            {
+              label: "Complexity Level",
+              source: "Screen Resolution",
+              value: data.screenRes,
+            },
+            {
+              label: "Pattern Density",
+              source: "Hardware Concurrency",
+              value: `${data.cores} Cores`,
+            },
+            {
+              label: "Texture Grain",
+              source: "Browser Renderer",
+              value: "WebGL Renderer string",
+            },
+            {
+              label: "Shape Geometry",
+              source: "User Agent Length",
+              value: `${data.userAgent.length} chars`,
+            },
+          ];
+
+          grid.innerHTML = items
+            .map(
+              (item) => `
+                    <div class="flex items-center justify-between p-3 border border-white/5 rounded bg-white/5 hover:bg-emerald-900/10 transition-colors cursor-help">
+                        <div>
+                            <div class="text-xs text-emerald-400 font-bold uppercase tracking-wider">${item.label}</div>
+                            <div class="text-xs text-neutral-500 mt-1">Source: ${item.source}</div>
+                        </div>
+                        <div class="text-right mono text-xs text-white bg-black/50 px-2 py-1 rounded">
+                            ${item.value}
+                        </div>
+                    </div>
+                `,
+            )
+            .join("");
+        },
+      };
+
+      // Modal Logic
+      const modal = document.getElementById("detailsModal");
+      document
+        .getElementById("btnToggleDetails")
+        .addEventListener("click", () => {
+          modal.classList.remove("hidden");
+        });
+      document.getElementById("btnCloseModal").addEventListener("click", () => {
+        modal.classList.add("hidden");
+      });
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.add("hidden");
+      });
+
+      // Start
+      window.addEventListener("load", () => app.init());
+    </script>
+  </body>
+</html>
