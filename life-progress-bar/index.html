@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life Progress | Memento Mori</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@200;400&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* --- 核心设计系统 --- */
+      :root {
+        --bg-color: #050505;
+        --card-bg: #0a0a0a;
+        --text-main: #ededed;
+        --grid-line: #1a1a1a;
+        --input-border: #333;
+        --input-focus: #fff;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: "Inter", sans-serif;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* 噪点纹理 */
+      .noise-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 50;
+        opacity: 0.04;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* --- 自定义日期输入器样式 --- */
+      .date-input-group {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+
+      .date-segment {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--input-border);
+        color: white;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 2rem;
+        text-align: center;
+        outline: none;
+        padding: 0.5rem 0;
+        transition:
+          border-color 0.3s ease,
+          color 0.3s ease;
+        caret-color: white; /* 光标颜色 */
+      }
+
+      .date-segment::placeholder {
+        color: #333;
+        opacity: 1;
+        transition: opacity 0.2s;
+      }
+      .date-segment:focus::placeholder {
+        opacity: 0;
+      }
+      .date-segment:focus {
+        border-bottom-color: var(--input-focus);
+      }
+
+      /* 移除数字输入的上下箭头 */
+      .date-segment::-webkit-outer-spin-button,
+      .date-segment::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .date-segment[type="number"] {
+        -moz-appearance: textfield;
+      }
+
+      .date-separator {
+        color: #333;
+        font-size: 2rem;
+        font-weight: 200;
+        padding-bottom: 5px;
+      }
+
+      /* 错误震动动画 */
+      .shake {
+        animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        border-bottom-color: #cf352e !important;
+      }
+      @keyframes shake {
+        10%,
+        90% {
+          transform: translate3d(-1px, 0, 0);
+        }
+        20%,
+        80% {
+          transform: translate3d(2px, 0, 0);
+        }
+        30%,
+        50%,
+        70% {
+          transform: translate3d(-4px, 0, 0);
+        }
+        40%,
+        60% {
+          transform: translate3d(4px, 0, 0);
+        }
+      }
+
+      /* --- Bento Grid & Cards --- */
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 1rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-bottom: 4rem;
+      }
+      @media (min-width: 768px) {
+        .bento-grid {
+          grid-template-columns: repeat(12, 1fr);
+          grid-template-rows: auto auto auto;
+        }
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--grid-line);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.3s ease;
+      }
+      .card:hover {
+        border-color: #333;
+      }
+
+      /* 进度条 */
+      .bar-container {
+        width: 100%;
+        height: 2px;
+        background: #222;
+        margin-top: 0.5rem;
+        position: relative;
+      }
+      .bar-fill {
+        height: 100%;
+        background: white;
+        position: absolute;
+        left: 0;
+        top: 0;
+        transition: width 0.1s linear;
+      }
+
+      /* 矩阵 */
+      #life-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(6px, 1fr));
+        gap: 2px;
+        width: 100%;
+        height: auto;
+      }
+      .grid-cell {
+        aspect-ratio: 1;
+        background-color: #1a1a1a;
+        border-radius: 1px;
+      }
+      .grid-cell.past {
+        background-color: #333;
+      }
+      .grid-cell.current {
+        background-color: #fff;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        animation: blink 1s infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* 显隐动画 */
+      .hidden-section {
+        display: none;
+        opacity: 0;
+      }
+      .fade-in {
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      ::-webkit-scrollbar {
+        width: 0px;
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen flex flex-col items-center selection:bg-white selection:text-black"
+  >
+    <div class="noise-overlay"></div>
+
+    <!-- 阶段 1: 入口 (The Input) -->
+    <section
+      id="input-section"
+      class="flex flex-col items-center justify-center h-screen w-full px-6 z-10 transition-all duration-700"
+    >
+      <h1
+        class="text-3xl md:text-5xl font-light mb-4 tracking-tighter text-white"
+      >
+        Life Progress
+      </h1>
+      <p
+        class="text-gray-500 text-xs md:text-sm tracking-[0.3em] uppercase mb-16"
+      >
+        Initialize Sequence
+      </p>
+
+      <div class="w-full max-w-md text-center">
+        <label class="block text-xs text-gray-600 mb-6 uppercase tracking-wider"
+          >Enter Date of Birth (YYYY / MM / DD)</label
+        >
+
+        <!-- 自定义分段输入器 -->
+        <div class="date-input-group mb-12">
+          <input
+            type="number"
+            id="in-year"
+            class="date-segment w-24 md:w-32"
+            placeholder="YYYY"
+            maxlength="4"
+            oninput="handleInput(this, 'in-month', 4)"
+          />
+          <span class="date-separator">/</span>
+          <input
+            type="number"
+            id="in-month"
+            class="date-segment w-16 md:w-20"
+            placeholder="MM"
+            maxlength="2"
+            oninput="handleInput(this, 'in-day', 2)"
+            onkeydown="handleBack(event, this, 'in-year')"
+          />
+          <span class="date-separator">/</span>
+          <input
+            type="number"
+            id="in-day"
+            class="date-segment w-16 md:w-20"
+            placeholder="DD"
+            maxlength="2"
+            oninput="handleInput(this, 'submit-btn', 2)"
+            onkeydown="handleBack(event, this, 'in-month')"
+          />
+        </div>
+
+        <button
+          id="submit-btn"
+          onclick="validateAndStart()"
+          class="opacity-0 translate-y-4 px-8 py-3 border border-white/20 text-white hover:bg-white hover:text-black transition-all duration-500 text-xs tracking-[0.2em] uppercase rounded-sm"
+        >
+          Initialize System
+        </button>
+      </div>
+    </section>
+
+    <!-- 阶段 2: 仪表盘 (The Dashboard) -->
+    <section
+      id="dashboard-section"
+      class="hidden-section w-full px-4 md:px-8 py-12 z-10"
+    >
+      <!-- 头部 -->
+      <header
+        class="max-w-[1200px] mx-auto flex justify-between items-end mb-8 border-b border-[#222] pb-4"
+      >
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span
+              class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
+            ></span>
+            <span
+              class="text-[10px] text-green-500 font-mono tracking-widest uppercase"
+              >System Active</span
+            >
+          </div>
+          <div class="text-xs text-gray-500 font-mono" id="current-age-display">
+            AGE: 0.00000000
+          </div>
+        </div>
+        <button
+          onclick="clearStorageAndReset()"
+          class="text-[10px] text-gray-600 hover:text-red-400 uppercase tracking-widest transition-colors border-b border-transparent hover:border-red-400 pb-0.5"
+        >
+          Re-Initialize
+        </button>
+      </header>
+
+      <!-- Bento Grid -->
+      <div class="bento-grid">
+        <!-- 1. 主进度条 -->
+        <div
+          class="card col-span-1 md:col-span-12 flex flex-col justify-end min-h-[160px]"
+        >
+          <div
+            class="absolute top-6 left-6 text-xs text-gray-500 tracking-widest uppercase"
+          >
+            Total Existence
+          </div>
+          <div class="flex justify-between items-baseline mb-2">
+            <h3
+              class="text-3xl md:text-5xl font-light text-white tracking-tighter"
+              id="life-val"
+            >
+              0.0000000%
+            </h3>
+          </div>
+          <div class="bar-container h-1">
+            <div id="life-bar" class="bar-fill"></div>
+          </div>
+          <div
+            class="flex justify-between mt-3 text-[10px] font-mono text-gray-600"
+          >
+            <span>START</span>
+            <span>80 YEARS TARGET</span>
+          </div>
+        </div>
+
+        <!-- 2. This Year -->
+        <div
+          class="card col-span-1 md:col-span-4 flex flex-col justify-between h-[180px]"
+        >
+          <div class="text-xs text-gray-500 tracking-widest uppercase">
+            Current Cycle (Year)
+          </div>
+          <div>
+            <div class="text-2xl font-mono text-white mb-2" id="year-val">
+              0.00%
+            </div>
+            <div class="bar-container">
+              <div id="year-bar" class="bar-fill bg-gray-400"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Bio Metrics -->
+        <div
+          class="card col-span-1 md:col-span-4 flex flex-col justify-between h-[180px]"
+        >
+          <div class="text-xs text-gray-500 tracking-widest uppercase">
+            Vital Estimates
+          </div>
+          <div>
+            <div class="text-xs text-gray-600 mb-1">HEARTBEATS</div>
+            <div
+              class="text-2xl font-mono text-white tracking-tight mb-4"
+              id="heart-val"
+            >
+              0
+            </div>
+            <div class="w-full h-[1px] bg-[#222] mb-3"></div>
+            <div class="text-xs text-gray-600 mb-1">BREATHS taken</div>
+            <div
+              class="text-xl font-mono text-gray-300 tracking-tight"
+              id="breath-val"
+            >
+              0
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Today -->
+        <div
+          class="card col-span-1 md:col-span-4 flex flex-col justify-between h-[180px]"
+        >
+          <div class="text-xs text-gray-500 tracking-widest uppercase">
+            Today
+          </div>
+          <div>
+            <div class="text-2xl font-mono text-white mb-2" id="day-val">
+              0.00%
+            </div>
+            <div class="bar-container">
+              <div id="day-bar" class="bar-fill bg-gray-400"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 剩余时间 -->
+        <div class="card col-span-1 md:col-span-3 flex flex-col gap-4">
+          <div class="text-xs text-gray-500 tracking-widest uppercase">
+            Remaining Resources
+          </div>
+          <div>
+            <div class="text-lg font-mono text-white" id="rem-years">0</div>
+            <div class="text-[10px] text-gray-600 uppercase">Winters</div>
+          </div>
+          <div>
+            <div class="text-lg font-mono text-white" id="rem-weeks">0</div>
+            <div class="text-[10px] text-gray-600 uppercase">Weekends</div>
+          </div>
+          <div>
+            <div class="text-lg font-mono text-white" id="rem-days">0</div>
+            <div class="text-[10px] text-gray-600 uppercase">Days</div>
+          </div>
+        </div>
+
+        <!-- 6. Grid -->
+        <div class="card col-span-1 md:col-span-9 relative">
+          <div class="flex justify-between items-start mb-6">
+            <div class="text-xs text-gray-500 tracking-widest uppercase">
+              The Grid (Months)
+            </div>
+            <div class="flex gap-4 text-[10px] uppercase tracking-wider">
+              <div class="flex items-center gap-1">
+                <div class="w-2 h-2 bg-[#333]"></div>
+                Past
+              </div>
+              <div class="flex items-center gap-1">
+                <div class="w-2 h-2 bg-white animate-pulse"></div>
+                Now
+              </div>
+            </div>
+          </div>
+          <div id="life-grid" class="w-full opacity-80"></div>
+        </div>
+      </div>
+
+      <footer
+        class="text-center text-[#333] text-[10px] tracking-[0.2em] uppercase mt-8 opacity-50 hover:opacity-100 transition-opacity"
+      >
+        Based on 80-year average lifespan expectancy.
+      </footer>
+    </section>
+
+    <script>
+      const CONFIG = { lifespan: 80, avgHeartRate: 1.33, avgBreathRate: 0.26 };
+      const STORAGE_KEY = "life_progress_dob_v1";
+      let state = { birthDate: null, animationId: null };
+
+      // DOM Elements
+      const els = {
+        inputSec: document.getElementById("input-section"),
+        dashSec: document.getElementById("dashboard-section"),
+        inYear: document.getElementById("in-year"),
+        inMonth: document.getElementById("in-month"),
+        inDay: document.getElementById("in-day"),
+        submitBtn: document.getElementById("submit-btn"),
+        // ... (其他仪表盘元素，在 updateLoop 中动态获取或缓存)
+      };
+
+      // --- 初始化逻辑 ---
+      window.onload = () => {
+        const savedDate = localStorage.getItem(STORAGE_KEY);
+        if (savedDate) {
+          // 如果有存档，直接进入（跳过输入动画）
+          state.birthDate = new Date(savedDate);
+          els.inputSec.style.display = "none";
+          els.dashSec.style.display = "block";
+          els.dashSec.style.opacity = "1"; // 立即显示
+          initGrid();
+          updateLoop();
+        } else {
+          // 没有存档，聚焦第一个输入框
+          els.inYear.focus();
+        }
+      };
+
+      // --- 输入框逻辑 (自动跳转) ---
+      function handleInput(el, nextId, len) {
+        // 限制长度
+        if (el.value.length > len) el.value = el.value.slice(0, len);
+
+        // 检查是否应该显示按钮
+        const y = els.inYear.value,
+          m = els.inMonth.value,
+          d = els.inDay.value;
+        if (y.length === 4 && m.length > 0 && d.length > 0) {
+          els.submitBtn.classList.remove("opacity-0", "translate-y-4");
+        } else {
+          els.submitBtn.classList.add("opacity-0", "translate-y-4");
+        }
+
+        // 自动跳转
+        if (el.value.length === len) {
+          if (nextId === "submit-btn") {
+            // 完成输入，不做跳转，或可选择聚焦按钮
+          } else {
+            document.getElementById(nextId).focus();
+          }
+        }
+      }
+
+      // --- 输入框逻辑 (Backspace 回退) ---
+      function handleBack(e, el, prevId) {
+        if (e.key === "Backspace" && el.value === "") {
+          e.preventDefault();
+          document.getElementById(prevId).focus();
+        }
+        if (e.key === "Enter") validateAndStart();
+      }
+
+      // --- 验证与启动 ---
+      function validateAndStart() {
+        const y = parseInt(els.inYear.value);
+        const m = parseInt(els.inMonth.value);
+        const d = parseInt(els.inDay.value);
+
+        // 基础验证
+        const date = new Date(y, m - 1, d);
+        const now = new Date();
+
+        if (
+          date.getFullYear() !== y ||
+          date.getMonth() + 1 !== m ||
+          date.getDate() !== d ||
+          date > now ||
+          y < 1900
+        ) {
+          // 错误动画
+          [els.inYear, els.inMonth, els.inDay].forEach((el) => {
+            el.classList.add("shake");
+            setTimeout(() => el.classList.remove("shake"), 500);
+          });
+          return;
+        }
+
+        // 保存并启动
+        state.birthDate = date;
+        localStorage.setItem(STORAGE_KEY, date.toISOString());
+
+        transitionToDashboard();
+      }
+
+      function transitionToDashboard() {
+        els.inputSec.style.opacity = "0";
+        setTimeout(() => {
+          els.inputSec.style.display = "none";
+          els.dashSec.style.display = "block";
+          els.dashSec.classList.add("fade-in");
+          initGrid();
+          updateLoop();
+        }, 600);
+      }
+
+      function clearStorageAndReset() {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload(); // 简单粗暴，刷新页面重置状态
+      }
+
+      // --- 仪表盘逻辑 (复用之前的核心逻辑) ---
+      function initGrid() {
+        const grid = document.getElementById("life-grid");
+        if (grid.children.length > 0) return; // 避免重复生成
+
+        const totalMonths = CONFIG.lifespan * 12;
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < totalMonths; i++) {
+          const cell = document.createElement("div");
+          cell.className = "grid-cell";
+          fragment.appendChild(cell);
+        }
+        grid.appendChild(fragment);
+      }
+
+      function updateLoop() {
+        const now = new Date();
+        const birth = state.birthDate;
+        const totalMs =
+          new Date(birth).setFullYear(birth.getFullYear() + CONFIG.lifespan) -
+          birth;
+        const livedMs = now - birth;
+
+        // 百分比计算
+        const lifePct = Math.min(100, Math.max(0, (livedMs / totalMs) * 100));
+
+        // DOM Update
+        document.getElementById("life-val").innerText =
+          lifePct.toFixed(7) + "%";
+        document.getElementById("life-bar").style.width = lifePct + "%";
+
+        // Year & Day
+        const currYear = now.getFullYear();
+        const yearStart = new Date(currYear, 0, 1);
+        const yearEnd = new Date(currYear + 1, 0, 1);
+        const yearPct = ((now - yearStart) / (yearEnd - yearStart)) * 100;
+        document.getElementById("year-val").innerText =
+          yearPct.toFixed(5) + "%";
+        document.getElementById("year-bar").style.width = yearPct + "%";
+
+        const dayStart = new Date(currYear, now.getMonth(), now.getDate());
+        const dayEnd = new Date(currYear, now.getMonth(), now.getDate() + 1);
+        const dayPct = ((now - dayStart) / (dayEnd - dayStart)) * 100;
+        document.getElementById("day-val").innerText = dayPct.toFixed(3) + "%";
+        document.getElementById("day-bar").style.width = dayPct + "%";
+
+        // Bio
+        const livedSec = livedMs / 1000;
+        document.getElementById("heart-val").innerText = Math.floor(
+          livedSec * CONFIG.avgHeartRate,
+        ).toLocaleString();
+        document.getElementById("breath-val").innerText = Math.floor(
+          livedSec * CONFIG.avgBreathRate,
+        ).toLocaleString();
+
+        // Age & Remaining
+        document.getElementById("current-age-display").innerText =
+          `AGE: ${(livedMs / 31557600000).toFixed(8)}`;
+
+        const remMs = totalMs - livedMs;
+        if (remMs > 0) {
+          document.getElementById("rem-years").innerText = Math.floor(
+            remMs / 31557600000,
+          );
+          document.getElementById("rem-weeks").innerText = Math.floor(
+            remMs / 604800000,
+          ).toLocaleString();
+          document.getElementById("rem-days").innerText = Math.floor(
+            remMs / 86400000,
+          ).toLocaleString();
+        }
+
+        // Grid Update (每 60 帧更新一次类名即可，此处简化为每帧检查)
+        const monthsLived = Math.floor(
+          (currYear - birth.getFullYear()) * 12 +
+            now.getMonth() -
+            birth.getMonth(),
+        );
+        updateGridVisuals(monthsLived);
+
+        state.animationId = requestAnimationFrame(updateLoop);
+      }
+
+      function updateGridVisuals(months) {
+        const grid = document.getElementById("life-grid");
+        // 简单优化：只检查变更边界
+        // 完整遍历以确保状态正确
+        const cells = grid.children;
+        // 仅当月份变化时才进行重绘可能更好，但为了闪烁光标效果实时性，我们只处理当前点
+        // 这里为了代码简洁，每次更新类名（现代浏览器处理这种class变更很快）
+
+        // 性能优化版：
+        // 实际上在JS中记录上一次的month，如果没变就不操作DOM会更好。
+        // 鉴于篇幅，这里假设已优化。
+
+        // 粗略实现：
+        if (grid.lastRenderedMonth === months) return;
+        grid.lastRenderedMonth = months;
+
+        for (let i = 0; i < cells.length; i++) {
+          if (i < months) cells[i].className = "grid-cell past";
+          else if (i === months) cells[i].className = "grid-cell current";
+          else cells[i].className = "grid-cell";
+        }
+      }
+    </script>
+  </body>
+</html>
