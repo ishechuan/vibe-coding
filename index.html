@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vibe Coding Works | 创意作品集</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-tertiary: #1a1a1a;
+      --text-primary: #ffffff;
+      --text-secondary: #888888;
+      --text-muted: #444444;
+      --accent: #ffffff;
+      --accent-dim: rgba(255, 255, 255, 0.1);
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      cursor: default;
+    }
+
+    /* Custom Cursor */
+    .cursor-dot,
+    .cursor-outline {
+      position: fixed;
+      top: 0;
+      left: 0;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .cursor-dot {
+      width: 8px;
+      height: 8px;
+      background: white;
+    }
+
+    .cursor-outline {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: transform 0.15s ease, width 0.2s ease, height 0.2s ease;
+    }
+
+    body:hover .cursor-outline {
+      width: 60px;
+      height: 60px;
+    }
+
+    /* Noise Overlay */
+    .noise {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      padding: 2rem;
+    }
+
+    .hero-content {
+      text-align: center;
+      z-index: 10;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 12vw, 10rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 0.9;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      transform: translateY(60px);
+      animation: heroTitleIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.3s;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 300;
+      color: var(--text-secondary);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeInUp 1s ease forwards;
+      animation-delay: 0.8s;
+    }
+
+    .hero-line {
+      width: 1px;
+      height: 120px;
+      background: linear-gradient(to bottom, var(--text-secondary), transparent);
+      margin: 3rem auto 0;
+      opacity: 0;
+      animation: heroLineIn 1s ease forwards;
+      animation-delay: 1.2s;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 3rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      animation: fadeInUp 1s ease forwards;
+      animation-delay: 1.5s;
+    }
+
+    .scroll-hint span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .scroll-mouse {
+      width: 24px;
+      height: 38px;
+      border: 2px solid var(--text-muted);
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .scroll-wheel {
+      width: 3px;
+      height: 8px;
+      background: var(--text-muted);
+      border-radius: 2px;
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: scrollWheel 2s ease-in-out infinite;
+    }
+
+    /* Works Section */
+    .works {
+      padding: 8rem 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .works-header {
+      margin-bottom: 6rem;
+    }
+
+    .works-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .works-title {
+      font-size: clamp(2rem, 5vw, 4rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    /* Project Cards */
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8rem;
+    }
+
+    .project-item {
+      position: relative;
+      opacity: 0;
+      transform: translateY(80px);
+      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .project-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .project-card {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    @media (min-width: 1024px) {
+      .project-card {
+        grid-template-columns: 1.2fr 1fr;
+        gap: 6rem;
+      }
+
+      .project-item:nth-child(even) .project-card {
+        direction: rtl;
+      }
+    }
+
+    .project-preview {
+      position: relative;
+      aspect-ratio: 16/10;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .project-preview:hover {
+      border-color: var(--text-muted);
+      transform: scale(1.02);
+    }
+
+    .project-preview iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      transform: scale(0.85);
+      transform-origin: center;
+      pointer-events: none;
+    }
+
+    .project-preview-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(10, 10, 10, 0.8) 100%);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2rem;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .project-preview:hover .project-preview-overlay {
+      opacity: 1;
+    }
+
+    .visit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .visit-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+    }
+
+    .project-info {
+      direction: ltr;
+    }
+
+    .project-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .project-number::before {
+      content: '';
+      width: 40px;
+      height: 1px;
+      background: var(--text-muted);
+    }
+
+    .project-name {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+      line-height: 1.1;
+    }
+
+    .project-description {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 2rem;
+      max-width: 480px;
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .tag {
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    /* Footer */
+    .footer {
+      padding: 6rem 2rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      margin-top: 4rem;
+    }
+
+    .footer-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* Animations */
+    @keyframes heroTitleIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes heroLineIn {
+      from {
+        opacity: 0;
+        height: 0;
+      }
+      to {
+        opacity: 1;
+        height: 120px;
+      }
+    }
+
+    @keyframes scrollWheel {
+      0%, 100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      50% {
+        opacity: 0.3;
+        transform: translateX(-50%) translateY(8px);
+      }
+    }
+
+    /* Glitch Effect for Hero */
+    .glitch-wrapper {
+      position: relative;
+    }
+
+    .glitch {
+      position: relative;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+    }
+
+    .glitch:hover::before {
+      animation: glitch-1 0.4s linear;
+      clip-path: inset(0 0 0 0);
+      opacity: 0.5;
+      color: #00ffff;
+    }
+
+    .glitch:hover::after {
+      animation: glitch-2 0.4s linear;
+      clip-path: inset(0 0 0 0);
+      opacity: 0.5;
+      color: #ff00ff;
+    }
+
+    @keyframes glitch-1 {
+      0%, 100% { clip-path: inset(20% 0 60% 0); transform: translate(-2px, 2px); }
+      20% { clip-path: inset(10% 0 70% 0); transform: translate(2px, -2px); }
+      40% { clip-path: inset(50% 0 30% 0); transform: translate(-2px, 2px); }
+      60% { clip-path: inset(70% 0 10% 0); transform: translate(2px, -2px); }
+      80% { clip-path: inset(40% 0 40% 0); transform: translate(-2px, 2px); }
+    }
+
+    @keyframes glitch-2 {
+      0%, 100% { clip-path: inset(60% 0 20% 0); transform: translate(2px, -2px); }
+      20% { clip-path: inset(70% 0 10% 0); transform: translate(-2px, 2px); }
+      40% { clip-path: inset(30% 0 50% 0); transform: translate(2px, -2px); }
+      60% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 2px); }
+      80% { clip-path: inset(40% 0 40% 0); transform: translate(2px, -2px); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .cursor-dot,
+      .cursor-outline {
+        display: none;
+      }
+
+      .hero {
+        padding: 1rem;
+      }
+
+      .project-list {
+        gap: 4rem;
+      }
+
+      .project-preview {
+        aspect-ratio: 4/3;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Custom Cursor -->
+  <div class="cursor-dot"></div>
+  <div class="cursor-outline"></div>
+
+  <!-- Noise Overlay -->
+  <div class="noise"></div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="hero-title glitch-wrapper">
+        <span class="glitch" data-text="VIBE">VIBE</span>
+        <br />
+        <span class="glitch" data-text="CODING">CODING</span>
+      </h1>
+      <p class="hero-subtitle">Creative Digital Experiences</p>
+    </div>
+    <div class="hero-line"></div>
+    <div class="scroll-hint">
+      <div class="scroll-mouse">
+        <div class="scroll-wheel"></div>
+      </div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- Works Section -->
+  <section class="works">
+    <div class="works-header">
+      <p class="works-label">Selected Works</p>
+      <h2 class="works-title">Projects</h2>
+    </div>
+
+    <div class="project-list">
+      <!-- Project 1: Life Progress -->
+      <article class="project-item" data-delay="0">
+        <a href="life-progress-bar/index.html" class="project-card" style="text-decoration: none; color: inherit;">
+          <div class="project-preview">
+            <iframe src="life-progress-bar/index.html" loading="lazy"></iframe>
+            <div class="project-preview-overlay">
+              <span class="visit-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M7 7H17M7 7V17"/>
+                </svg>
+                Visit Project
+              </span>
+            </div>
+          </div>
+          <div class="project-info">
+            <p class="project-number">01</p>
+            <h3 class="project-name">Life Progress</h3>
+            <p class="project-description">
+              Memento Mori - 一个关于生命进度的人生仪表盘。输入你的出生日期，可视化你在这个世界上的时间进度，包括心跳、呼吸次数等生命指标。
+            </p>
+            <div class="project-tags">
+              <span class="tag">可视化</span>
+              <span class="tag">人生哲学</span>
+              <span class="tag">交互设计</span>
+              <span class="tag">Tailwind</span>
+            </div>
+          </div>
+        </a>
+      </article>
+
+      <!-- Project 2: The Writer's Block -->
+      <article class="project-item" data-delay="0.1">
+        <a href="the-writer-block/index.html" class="project-card" style="text-decoration: none; color: inherit;">
+          <div class="project-preview">
+            <iframe src="the-writer-block/index.html" loading="lazy"></iframe>
+            <div class="project-preview-overlay">
+              <span class="visit-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M7 7H17M7 7V17"/>
+                </svg>
+                Visit Project
+              </span>
+            </div>
+          </div>
+          <div class="project-info">
+            <p class="project-number">02</p>
+            <h3 class="project-name">The Writer's Block</h3>
+            <p class="project-description">
+              沉浸式写作应用。如果你停止打字超过5秒，所有文字将消失。强制进入心流状态，打破写作拖延症。
+            </p>
+            <div class="project-tags">
+              <span class="tag">写作工具</span>
+              <span class="tag">心流状态</span>
+              <span class="tag">游戏化</span>
+              <span class="tag">Phosphor Icons</span>
+            </div>
+          </div>
+        </a>
+      </article>
+
+      <!-- Project 3: Identity Canvas -->
+      <article class="project-item" data-delay="0.2">
+        <a href="identity-canvas/index.html" class="project-card" style="text-decoration: none; color: inherit;">
+          <div class="project-preview">
+            <iframe src="identity-canvas/index.html" loading="lazy"></iframe>
+            <div class="project-preview-overlay">
+              <span class="visit-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M7 7H17M7 7V17"/>
+                </svg>
+                Visit Project
+              </span>
+            </div>
+          </div>
+          <div class="project-info">
+            <p class="project-number">03</p>
+            <h3 class="project-name">Identity Canvas</h3>
+            <p class="project-description">
+              浏览器指纹艺术生成器。收集你的浏览器特征，生成独一无二的指纹艺术。支持Neural、Bauhaus、Glitch三种风格。
+            </p>
+            <div class="project-tags">
+              <span class="tag">浏览器指纹</span>
+              <span class="tag">生成艺术</span>
+              <span class="tag">Canvas</span>
+              <span class="tag">隐私</span>
+            </div>
+          </div>
+        </a>
+      </article>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p class="footer-text">VIBE CODING © 2024 — Crafted with passion</p>
+  </footer>
+
+  <script>
+    // Custom Cursor
+    const cursorDot = document.querySelector('.cursor-dot');
+    const cursorOutline = document.querySelector('.cursor-outline');
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let outlineX = 0;
+    let outlineY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    function animateCursor() {
+      outlineX += (mouseX - outlineX) * 0.15;
+      outlineY += (mouseY - outlineY) * 0.15;
+
+      cursorDot.style.left = `${mouseX}px`;
+      cursorDot.style.top = `${mouseY}px`;
+      cursorOutline.style.left = `${outlineX}px`;
+      cursorOutline.style.top = `${outlineY}px`;
+
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    // Hide cursor when leaving window
+    document.addEventListener('mouseleave', () => {
+      cursorDot.style.opacity = '0';
+      cursorOutline.style.opacity = '0';
+    });
+
+    document.addEventListener('mouseenter', () => {
+      cursorDot.style.opacity = '1';
+      cursorOutline.style.opacity = '1';
+    });
+
+    // Scroll Reveal Animation
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const delay = entry.target.dataset.delay || 0;
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, delay * 1000);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.project-item').forEach((item) => {
+      observer.observe(item);
+    });
+
+    // Parallax Effect for Hero
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const hero = document.querySelector('.hero-content');
+      if (hero) {
+        hero.style.transform = `translateY(${scrolled * 0.3}px)`;
+        hero.style.opacity = 1 - (scrolled / window.innerHeight) * 1.5;
+      }
+    });
+
+    // Smooth Scroll for Anchor Links
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Add hover effect to project previews
+    document.querySelectorAll('.project-preview').forEach((preview) => {
+      preview.addEventListener('mouseenter', () => {
+        const iframe = preview.querySelector('iframe');
+        if (iframe) {
+          iframe.style.transform = 'scale(1)';
+        }
+      });
+
+      preview.addEventListener('mouseleave', () => {
+        const iframe = preview.querySelector('iframe');
+        if (iframe) {
+          iframe.style.transform = 'scale(0.85)';
+        }
+      });
+    });
+
+    // Console welcome message
+    console.log('%c VIBE CODING ', 'background: #000; color: #fff; font-size: 24px; padding: 10px 20px;');
+    console.log('%c Welcome to the showcase! ', 'color: #888; font-size: 14px;');
+  </script>
+</body>
+</html>
